@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Leaflet default icon fix for Vite */
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+  border-radius: 1rem;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+}

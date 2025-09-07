@@ -1,0 +1,16 @@
+Two command Prompts One each for server and app(As an administrator)
+
+change to the directory
+C:\Users\dell 5540\Downloads\project\mapgpt-mini\mapgpt-mini\src
+check and install dependencies
+npm install
+
+run the server
+
+node combinedServer.cjs
+
+Run the app
+npm run dev
+
+open in browser
+http://localhost:5173/

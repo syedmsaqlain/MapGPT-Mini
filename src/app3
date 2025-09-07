@@ -1,0 +1,118 @@
+import React, { useState } from "react";
+import { MapContainer, TileLayer, Marker, Polyline, useMap } from "react-leaflet";
+import axios from "axios";
+import "leaflet/dist/leaflet.css";
+
+function App() {
+  const [markers, setMarkers] = useState([]);
+  const [polylines, setPolylines] = useState([]);
+  const [command, setCommand] = useState("");
+
+  // Placeholder geocoding function
+  async function geocode(location) {
+    // Replace with a real geocoding API (OpenStreetMap / Google Maps)
+    return [20 + Math.random() * 10, 0 + Math.random() * 10];
+  }
+
+  // Interpret user command via backend proxy
+  async function interpretCommand(cmd) {
+    console.log("Sending command to backend:", cmd);
+
+    try {
+      const response = await axios.post("http://localhost:5000/api/gemini", { command: cmd });
+            console.log("Raw backend response:", response.data);
+
+      // Gemini (and OpenRouter style) responses put content here:
+      let rawContent = "";
+
+      if (response.data?.choices?.[0]?.message?.content) {
+        rawContent = response.data.choices[0].message.content;
+      } else if (response.data?.candidates?.[0]?.content?.parts?.[0]?.text) {
+        rawContent = response.data.candidates[0].content.parts[0].text;
+      } else {
+        throw new Error("Unexpected Gemini response format: " + JSON.stringify(response.data));
+      }
+
+      rawContent = rawContent.trim();
+      console.log("Model raw content:", rawContent);
+
+      return JSON.parse(rawContent); // expecting valid JSON as instructed
+    } catch (err) {
+      console.error("Gemini API call failed:", err.response?.data || err.message);
+      alert("Gemini API call failed: " + (err.response?.data?.error || err.message));
+      return null;
+    }
+  }
+
+  function MapController() {
+    const map = useMap();
+
+    async function handleCommand(cmd) {
+      console.log("handleCommand called with:", cmd);
+      const instruction = await interpretCommand(cmd);
+      if (!instruction) return;
+
+      switch (instruction.action) {
+        case "zoom":
+          if (instruction.level) map.setZoom(instruction.level);
+          break;
+
+        case "add_marker":
+          if (!instruction.location) return alert("No location specified");
+          const coords = await geocode(instruction.location);
+          setMarkers([...markers, coords]);
+          break;
+
+        case "draw_route":
+          if (!instruction.from || !instruction.to)
+            return alert("Both 'from' and 'to' locations are required");
+          const fromCoords = await geocode(instruction.from);
+          const toCoords = await geocode(instruction.to);
+          setPolylines([...polylines, [fromCoords, toCoords]]);
+          map.fitBounds([fromCoords, toCoords]);
+          break;
+
+        case "clear_map":
+          setMarkers([]);
+          setPolylines([]);
+          break;
+
+        default:
+          alert("Unknown action: " + instruction.action);
+      }
+    }
+
+    return (
+      <div style={{ position: "absolute", top: 10, left: 10, zIndex: 1000 }}>
+        <input
+          type="text"
+          value={command}
+          onChange={(e) => setCommand(e.target.value)}
+          placeholder="Type your map command"
+          style={{ width: "250px", marginRight: "5px" }}
+        />
+        <button onClick={() => handleCommand(command)}>Run</button>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ height: "100vh", width: "100vw" }}>
+      <MapContainer center={[20, 0]} zoom={2} style={{ height: "100%", width: "100%" }}>
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution="&copy; OpenStreetMap contributors"
+        />
+        {markers.map((pos, idx) => (
+          <Marker key={idx} position={pos} />
+        ))}
+        {polylines.map((line, idx) => (
+          <Polyline key={idx} positions={line} color="blue" />
+        ))}
+        <MapController />
+      </MapContainer>
+    </div>
+  );
+}
+
+export default App;

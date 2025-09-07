@@ -1,0 +1,1 @@
+{"type": "FeatureCollection", "features": [{"type": "Feature", "properties": {"name": "Main Road"}, "geometry": {"type": "LineString", "coordinates": [[73.03, 33.69], [73.05, 33.7], [73.07, 33.72]]}}, {"type": "Feature", "properties": {"name": "Ring Road"}, "geometry": {"type": "LineString", "coordinates": [[73.04, 33.68], [73.06, 33.69], [73.08, 33.7], [73.1, 33.69]]}}]}
